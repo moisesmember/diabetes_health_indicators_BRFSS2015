@@ -1,0 +1,11 @@
+.git
+.venv
+.dvc
+data
+models
+reports
+tests
+notebooks
+**/__pycache__
+.*_cache
+.coverage

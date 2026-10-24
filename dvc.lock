@@ -1,0 +1,116 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: diabetes-risk prepare
+    deps:
+    - path: data/raw/diabetes_012_health_indicators_BRFSS2015.csv
+      hash: md5
+      md5: 0c84b09d240b72e8180bceff3965d1bd
+      size: 22738151
+    - path: src/diabetes_risk/data
+      hash: md5
+      md5: c5bab78ff6a58799c42f19a02e001103.dir
+      size: 8980
+      nfiles: 6
+    - path: src/diabetes_risk/domain
+      hash: md5
+      md5: 2393a8267f9f8804ec98a1c0a371b8c3.dir
+      size: 8833
+      nfiles: 6
+    - path: src/diabetes_risk/pipelines/prepare.py
+      hash: md5
+      md5: 442418fb9e5b405d8c50179e434c5e52
+      size: 1991
+    params:
+      params.yaml:
+        data:
+          raw_path: data/raw/diabetes_012_health_indicators_BRFSS2015.csv
+          processed_dir: data/processed
+          positive_classes:
+          - 1
+          - 2
+          drop_duplicates: true
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: cc0161f4b38d8c8a73d4ca9029cceb61.dir
+      size: 1315207
+      nfiles: 2
+  train:
+    cmd: diabetes-risk train
+    deps:
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: fa387a7c665f702833f5ff96fdb8b779
+      size: 1044603
+    - path: src/diabetes_risk/evaluation
+      hash: md5
+      md5: b2c9de58a970fce869df389a2bf6fdb2.dir
+      size: 8839
+      nfiles: 4
+    - path: src/diabetes_risk/features
+      hash: md5
+      md5: 124dcc22bd30118568094508d72b6588.dir
+      size: 8151
+      nfiles: 4
+    - path: src/diabetes_risk/models
+      hash: md5
+      md5: 4f51d18a3d9d8c02b642e700d2f7f141.dir
+      size: 15085
+      nfiles: 6
+    - path: src/diabetes_risk/pipelines/train.py
+      hash: md5
+      md5: 19dc2fd3876de3698a23d39abfa8e11c
+      size: 3117
+    params:
+      params.yaml:
+        model:
+          name: hist_gradient_boosting
+          params:
+            learning_rate: 0.1
+            max_iter: 300
+            max_leaf_nodes: 31
+            class_weight: balanced
+            random_state: 42
+        training:
+          cv_folds: 5
+          threshold_beta: 2.0
+    outs:
+    - path: models/model.joblib
+      hash: md5
+      md5: 90599e8b88f9992337efedce538079af
+      size: 323615
+  evaluate:
+    cmd: diabetes-risk evaluate
+    deps:
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 939c5b001530105a5bd6ec76faddc27b
+      size: 270604
+    - path: models/model.joblib
+      hash: md5
+      md5: 90599e8b88f9992337efedce538079af
+      size: 323615
+    - path: src/diabetes_risk/evaluation
+      hash: md5
+      md5: b2c9de58a970fce869df389a2bf6fdb2.dir
+      size: 8839
+      nfiles: 4
+    - path: src/diabetes_risk/pipelines/evaluate.py
+      hash: md5
+      md5: dcd4da5d19d882b70f43d84f426b7ed8
+      size: 2656
+    params:
+      params.yaml:
+        evaluation:
+          min_metrics:
+            roc_auc: 0.78
+            pr_auc: 0.4
+            recall: 0.7
+    outs:
+    - path: reports/metrics.json
+      hash: md5
+      md5: e42064aa0f329e8b3950210d7e748c23
+      size: 299

@@ -1,0 +1,46 @@
+# Configuração única do pipeline. É lida pelo código (via Pydantic) e pelo DVC
+# (`params:` em dvc.yaml), então alterar um valor aqui invalida apenas as
+# etapas que dependem dele.
+
+data:
+  raw_path: data/raw/diabetes_012_health_indicators_BRFSS2015.csv
+  processed_dir: data/processed
+  # Classes originais: 0 = sem diabetes, 1 = pré-diabetes, 2 = diabetes.
+  # Tarefa binária de triagem: pré-diabetes e diabetes são tratados como positivos.
+  positive_classes: [1, 2]
+  drop_duplicates: true
+  test_size: 0.2
+  random_state: 42
+
+model:
+  # Qualquer nome registrado em `diabetes_risk.models.registry`.
+  name: hist_gradient_boosting
+  params:
+    learning_rate: 0.1
+    max_iter: 300
+    max_leaf_nodes: 31
+    class_weight: balanced
+    random_state: 42
+
+training:
+  cv_folds: 5
+  # Beta da F-score usada para escolher o limiar de decisão.
+  # beta > 1 favorece recall: em triagem, falso negativo custa mais caro.
+  threshold_beta: 2.0
+
+evaluation:
+  # Quality gate: o modelo só é aprovado se todas as métricas atingirem o mínimo.
+  min_metrics:
+    roc_auc: 0.78
+    pr_auc: 0.40
+    recall: 0.70
+
+tracking:
+  # "local" grava JSON em `uri`; "mlflow" usa o servidor/arquivo em `uri`.
+  backend: local
+  uri: reports/runs
+  experiment_name: diabetes-risk
+
+artifacts:
+  model_path: models/model.joblib
+  metrics_path: reports/metrics.json

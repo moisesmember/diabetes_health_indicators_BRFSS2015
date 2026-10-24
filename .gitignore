@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Ferramentas
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Dados e artefatos (gerados pelo pipeline / versionados pelo DVC)
+data/
+models/
+reports/runs/
+mlruns/
+mlflow.db
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

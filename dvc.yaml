@@ -1,0 +1,41 @@
+# DAG do pipeline. `dvc repro` reexecuta apenas as etapas cujas dependências
+# (código, dados ou parâmetros) mudaram.
+stages:
+  prepare:
+    cmd: diabetes-risk prepare
+    deps:
+      - data/raw/diabetes_012_health_indicators_BRFSS2015.csv
+      - src/diabetes_risk/data
+      - src/diabetes_risk/domain
+      - src/diabetes_risk/pipelines/prepare.py
+    params:
+      - data
+    outs:
+      - data/processed
+
+  train:
+    cmd: diabetes-risk train
+    deps:
+      - data/processed/train.parquet
+      - src/diabetes_risk/features
+      - src/diabetes_risk/models
+      - src/diabetes_risk/evaluation
+      - src/diabetes_risk/pipelines/train.py
+    params:
+      - model
+      - training
+    outs:
+      - models/model.joblib
+
+  evaluate:
+    cmd: diabetes-risk evaluate
+    deps:
+      - data/processed/test.parquet
+      - models/model.joblib
+      - src/diabetes_risk/evaluation
+      - src/diabetes_risk/pipelines/evaluate.py
+    params:
+      - evaluation
+    metrics:
+      - reports/metrics.json:
+          cache: false
