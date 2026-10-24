@@ -85,6 +85,20 @@ model = mlflow.pyfunc.load_model("models:/diabetes-risk@champion")
 model.predict(df)   # mesmo resultado da API
 ```
 
+## Análise exploratória
+
+O notebook [notebooks/01_analise_exploratoria.ipynb](notebooks/01_analise_exploratoria.ipynb)
+investiga os dados antes da modelagem, com cada resultado explicado em linguagem
+simples: qualidade dos dados (duplicados, rótulos conflitantes, respostas
+arredondadas), distribuição do alvo, agrupamentos e fatores de risco,
+correlações, perfis de pessoas (K-Means) e regras que concentram o risco
+(árvore de decisão). Ele começa com um resumo executivo dos principais achados.
+
+```bash
+uv sync --all-extras --group notebooks
+uv run jupyter lab notebooks/01_analise_exploratoria.ipynb
+```
+
 ## Como usar
 
 ### Opção A: Docker Compose (recomendado)
