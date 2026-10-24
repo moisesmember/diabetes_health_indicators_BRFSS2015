@@ -57,6 +57,7 @@ def config_dict(tmp_path: Path) -> dict[str, object]:
         "artifacts": {
             "model_path": str(tmp_path / "models" / "model.joblib"),
             "metrics_path": str(tmp_path / "reports" / "metrics.json"),
+            "report_dir": str(tmp_path / "reports"),
         },
     }
 
@@ -71,6 +72,25 @@ def config_file(tmp_path: Path, config_dict: dict[str, object]) -> Path:
 @pytest.fixture
 def config(config_file: Path) -> PipelineConfig:
     return load_config(config_file)
+
+
+@pytest.fixture
+def mlflow_config(
+    config_dict: dict[str, dict[str, object]],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> PipelineConfig:
+    """Configuração com MLflow em SQLite isolado dentro de ``tmp_path``."""
+    pytest.importorskip("mlflow")
+    monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
+    monkeypatch.chdir(tmp_path)  # o artifact store padrão (./mlruns) fica no tmp
+    config_dict["tracking"] = {
+        "backend": "mlflow",
+        "uri": f"sqlite:///{(tmp_path / 'mlflow.db').as_posix()}",
+        "experiment_name": "test-experiment",
+        "registered_model_name": "test-model",
+    }
+    return PipelineConfig.model_validate(config_dict)
 
 
 @pytest.fixture

@@ -26,3 +26,6 @@ mlflow.db
 .idea/
 .DS_Store
 Thumbs.db
+
+# Segredos locais do Docker Compose
+.env

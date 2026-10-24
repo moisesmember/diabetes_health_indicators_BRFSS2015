@@ -14,6 +14,7 @@ dependencies = [
     "pydantic>=2.7",
     "pyyaml>=6.0",
     "joblib>=1.4",
+    "matplotlib>=3.8",
     "fastapi>=0.110",
     "uvicorn>=0.29",
 ]
@@ -51,7 +52,8 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "PT", "RUF", "D"]
 # N803/N806: `X` maiúsculo é convenção do scikit-learn. D401: regra não entende português.
-ignore = ["D100", "D104", "D105", "D107", "D203", "D213", "D401", "D413", "N803", "N806"]
+# RUF001: o sinal "×" é usado de propósito nos textos de relatório.
+ignore = ["D100", "D104", "D105", "D107", "D203", "D213", "D401", "D413", "N803", "N806", "RUF001"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]

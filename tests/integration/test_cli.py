@@ -18,6 +18,11 @@ def test_cli_runs_all_stages(config_file: Path, raw_csv: Path, tmp_path: Path) -
     assert (tmp_path / "reports" / "metrics.json").exists()
 
 
+def test_cli_run_executes_all_stages(config_file: Path, raw_csv: Path, tmp_path: Path) -> None:
+    assert main(["--config", str(config_file), "run"]) == 0
+    assert (tmp_path / "reports" / "metrics_report.md").exists()
+
+
 def test_cli_evaluate_exits_with_error_when_gate_fails(
     config_file: Path, config_dict: dict[str, dict[str, object]], raw_csv: Path
 ) -> None:

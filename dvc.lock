@@ -14,8 +14,8 @@ stages:
       nfiles: 6
     - path: src/diabetes_risk/domain
       hash: md5
-      md5: 2393a8267f9f8804ec98a1c0a371b8c3.dir
-      size: 8833
+      md5: 0fabecbf345ffedd08d2fa8c6e87069f.dir
+      size: 12271
       nfiles: 6
     - path: src/diabetes_risk/pipelines/prepare.py
       hash: md5
@@ -45,11 +45,10 @@ stages:
       hash: md5
       md5: fa387a7c665f702833f5ff96fdb8b779
       size: 1044603
-    - path: src/diabetes_risk/evaluation
+    - path: src/diabetes_risk/evaluation/metrics.py
       hash: md5
-      md5: b2c9de58a970fce869df389a2bf6fdb2.dir
-      size: 8839
-      nfiles: 4
+      md5: 7f138cf9458627c44871fb6a44bf2dca
+      size: 6236
     - path: src/diabetes_risk/features
       hash: md5
       md5: 124dcc22bd30118568094508d72b6588.dir
@@ -57,13 +56,13 @@ stages:
       nfiles: 4
     - path: src/diabetes_risk/models
       hash: md5
-      md5: 4f51d18a3d9d8c02b642e700d2f7f141.dir
-      size: 15085
+      md5: 655b81dce8b30f1914449c9a066a6b63.dir
+      size: 15715
       nfiles: 6
     - path: src/diabetes_risk/pipelines/train.py
       hash: md5
-      md5: 19dc2fd3876de3698a23d39abfa8e11c
-      size: 3117
+      md5: 8b04f4556776d623550441cc258a9a33
+      size: 5255
     params:
       params.yaml:
         model:
@@ -80,8 +79,8 @@ stages:
     outs:
     - path: models/model.joblib
       hash: md5
-      md5: 90599e8b88f9992337efedce538079af
-      size: 323615
+      md5: 44814e8a4f3035ee6fae5dc5741eac63
+      size: 323937
   evaluate:
     cmd: diabetes-risk evaluate
     deps:
@@ -91,17 +90,17 @@ stages:
       size: 270604
     - path: models/model.joblib
       hash: md5
-      md5: 90599e8b88f9992337efedce538079af
-      size: 323615
+      md5: 44814e8a4f3035ee6fae5dc5741eac63
+      size: 323937
     - path: src/diabetes_risk/evaluation
       hash: md5
-      md5: b2c9de58a970fce869df389a2bf6fdb2.dir
-      size: 8839
-      nfiles: 4
+      md5: 337372cc5b46831c38d504f15c129dca.dir
+      size: 43961
+      nfiles: 10
     - path: src/diabetes_risk/pipelines/evaluate.py
       hash: md5
-      md5: dcd4da5d19d882b70f43d84f426b7ed8
-      size: 2656
+      md5: 642940378bd1e17b85b10fd64e7381c1
+      size: 6672
     params:
       params.yaml:
         evaluation:
@@ -110,7 +109,20 @@ stages:
             pr_auc: 0.4
             recall: 0.7
     outs:
+    - path: reports/feature_importance.csv
+      hash: md5
+      md5: 81a92112da5e5380fb87106453d8e4ea
+      size: 1169
+    - path: reports/figures
+      hash: md5
+      md5: b3c729f4af9abd51881697f370e9e60a.dir
+      size: 200005
+      nfiles: 6
     - path: reports/metrics.json
       hash: md5
-      md5: e42064aa0f329e8b3950210d7e748c23
-      size: 299
+      md5: f4f4a340fb020a4ac42df0dbb2cde8ff
+      size: 681
+    - path: reports/metrics_report.md
+      hash: md5
+      md5: 9e72785bbfa158ff951eb3e1b2f1af1a
+      size: 1899

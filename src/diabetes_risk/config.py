@@ -7,6 +7,7 @@ em vez de estourar no meio do treino.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Literal
 
@@ -70,18 +71,37 @@ class EvaluationConfig(_StrictModel):
 
 
 class TrackingConfig(_StrictModel):
-    """Onde registrar parâmetros e métricas dos experimentos."""
+    """Onde registrar parâmetros, métricas e modelos dos experimentos.
+
+    Com ``backend: mlflow``, a variável de ambiente padrão do MLflow
+    ``MLFLOW_TRACKING_URI`` tem precedência sobre ``uri``. Assim o mesmo
+    ``params.yaml`` funciona localmente (SQLite) e no Docker Compose (servidor).
+    """
 
     backend: Literal["local", "mlflow"] = "local"
     uri: str = "reports/runs"
     experiment_name: str = "diabetes-risk"
+    registered_model_name: str = "diabetes-risk"
+    champion_alias: str = "champion"
+
+    def resolved_uri(self) -> str:
+        """URI efetiva, considerando ``MLFLOW_TRACKING_URI`` para o backend MLflow."""
+        if self.backend == "mlflow":
+            return os.environ.get("MLFLOW_TRACKING_URI", self.uri)
+        return self.uri
 
 
 class ArtifactsConfig(_StrictModel):
-    """Onde salvar o modelo treinado e o relatório de avaliação."""
+    """Onde salvar o modelo treinado e os relatórios de avaliação."""
 
     model_path: Path
     metrics_path: Path
+    report_dir: Path = Path("reports")
+
+    @property
+    def figures_dir(self) -> Path:
+        """Pasta dos gráficos de avaliação."""
+        return self.report_dir / "figures"
 
 
 class PipelineConfig(_StrictModel):

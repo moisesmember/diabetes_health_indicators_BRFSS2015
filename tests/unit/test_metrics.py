@@ -4,6 +4,8 @@ import pytest
 from diabetes_risk.evaluation.metrics import (
     check_quality_gate,
     compute_metrics,
+    confusion_metrics,
+    fbeta_curve,
     find_best_threshold,
 )
 
@@ -68,3 +70,34 @@ class TestQualityGate:
     @pytest.mark.parametrize("value", [0.75, 0.9])
     def test_minimum_is_inclusive(self, value: float) -> None:
         assert check_quality_gate({"roc_auc": value}, {"roc_auc": 0.75}).passed
+
+
+class TestInterpretableMetrics:
+    def test_confusion_metrics_and_rates_per_1000(self) -> None:
+        y_true = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+        y_pred = [1, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+
+        metrics = confusion_metrics(y_true, y_pred)
+
+        assert (metrics["tp"], metrics["fn"], metrics["fp"], metrics["tn"]) == (1, 1, 1, 7)
+        assert metrics["specificity"] == pytest.approx(7 / 8)
+        assert metrics["npv"] == pytest.approx(7 / 8)
+        assert metrics["alerts_per_1000"] == pytest.approx(200)
+        assert metrics["missed_cases_per_1000"] == pytest.approx(100)
+        assert metrics["false_alarms_per_1000"] == pytest.approx(100)
+
+    def test_pr_auc_lift_is_relative_to_prevalence(self) -> None:
+        metrics = compute_metrics([0, 0, 0, 1], [0.1, 0.2, 0.3, 0.9])
+        assert metrics["prevalence"] == 0.25
+        assert metrics["pr_auc_lift"] == pytest.approx(metrics["pr_auc"] / 0.25)
+
+    def test_brier_skill_compares_with_prevalence_baseline(self) -> None:
+        y = np.array([0, 0, 0, 1])
+        constant = np.full(4, 0.25)  # prever sempre a prevalência
+        assert compute_metrics(y, constant)["brier_skill"] == pytest.approx(0.0)
+        assert compute_metrics(y, [0.0, 0.0, 0.0, 1.0])["brier_skill"] == pytest.approx(1.0)
+
+    def test_fbeta_curve_arrays_are_aligned(self) -> None:
+        curve = fbeta_curve([0, 1, 0, 1], [0.2, 0.8, 0.4, 0.6])
+        lengths = {len(curve.thresholds), len(curve.precision), len(curve.recall), len(curve.fbeta)}
+        assert len(lengths) == 1

@@ -36,11 +36,19 @@ evaluation:
     recall: 0.70
 
 tracking:
-  # "local" grava JSON em `uri`; "mlflow" usa o servidor/arquivo em `uri`.
-  backend: local
-  uri: reports/runs
+  # "mlflow": registra no MLflow. A variável MLFLOW_TRACKING_URI, se definida,
+  #           substitui `uri` (o Docker Compose aponta para o servidor).
+  # "local":  grava um run.json por execução em `uri` (sem dependências).
+  backend: mlflow
+  uri: sqlite:///mlflow.db
   experiment_name: diabetes-risk
+  # Cada avaliação registra uma versão no Model Registry; a que passa no
+  # quality gate recebe o alias abaixo (carregável via models:/diabetes-risk@champion).
+  registered_model_name: diabetes-risk
+  champion_alias: champion
 
 artifacts:
   model_path: models/model.joblib
   metrics_path: reports/metrics.json
+  # Relatório interpretável (metrics_report.md), gráficos e importância das features.
+  report_dir: reports

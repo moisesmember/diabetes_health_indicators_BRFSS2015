@@ -57,10 +57,60 @@ def test_full_pipeline(config: PipelineConfig, raw_csv: Path) -> None:
     assert saved["gate_passed"] is True
     assert saved["roc_auc"] == pytest.approx(report.metrics["roc_auc"])
 
-    runs = sorted(Path(config.tracking.uri, config.tracking.experiment_name).glob("*/run.json"))
-    assert len(runs) == 2  # uma execução para train, outra para evaluate
-    train_run = json.loads(runs[0].read_text(encoding="utf-8"))
-    assert "cv_roc_auc" in train_run["metrics"]
+    report_dir = config.artifacts.report_dir
+    assert "Quality gate" in (report_dir / "metrics_report.md").read_text(encoding="utf-8")
+    assert (report_dir / "feature_importance.csv").exists()
+    assert len(list(config.artifacts.figures_dir.glob("*.png"))) == 6
+
+    # train e evaluate compartilham um único run: cv/* e test/* lado a lado.
+    runs = list(Path(config.tracking.uri, config.tracking.experiment_name).glob("*/run.json"))
+    assert len(runs) == 1
+    metrics = json.loads(runs[0].read_text(encoding="utf-8"))["metrics"]
+    assert {"cv/roc_auc", "cv/roc_auc_std", "test/roc_auc", "test/recall"} <= set(metrics)
+
+
+def test_full_pipeline_with_mlflow(mlflow_config: PipelineConfig, raw_csv: Path) -> None:
+    import mlflow
+
+    run_prepare(mlflow_config)
+    bundle = run_train(mlflow_config)
+    report = run_evaluate(mlflow_config)
+
+    run = mlflow.get_run(bundle.run_id)
+    assert {"cv/pr_auc", "cv/pr_auc_std", "test/pr_auc", "test/missed_cases_per_1000"} <= set(
+        run.data.metrics
+    )
+    assert run.data.tags["gate_passed"] == "true"
+    assert run.data.tags["model_name"] == "logistic_regression"
+    assert "Quality gate" in run.data.tags["mlflow.note.content"]
+    artifacts = {a.path for a in mlflow.MlflowClient().list_artifacts(bundle.run_id, "evaluation")}
+    assert "evaluation/metrics_report.md" in artifacts
+
+    champion = mlflow.MlflowClient().get_model_version_by_alias("test-model", "champion")
+    assert str(champion.version) == report.model_version
+
+
+def test_failed_gate_registers_version_without_alias(
+    mlflow_config: PipelineConfig, raw_csv: Path
+) -> None:
+    import mlflow
+
+    config = mlflow_config.model_copy(
+        update={
+            "evaluation": mlflow_config.evaluation.model_copy(
+                update={"min_metrics": {"roc_auc": 0.999}}
+            )
+        }
+    )
+    run_prepare(config)
+    run_train(config)
+    report = run_evaluate(config)
+
+    assert not report.gate.passed
+    model = mlflow.MlflowClient().get_registered_model("test-model")
+    assert model.aliases == {}
+    version = mlflow.MlflowClient().get_model_version("test-model", report.model_version)
+    assert version.tags["gate_passed"] == "false"
 
 
 def test_gate_failure_is_reported(config_dict: dict[str, dict[str, object]], raw_csv: Path) -> None:

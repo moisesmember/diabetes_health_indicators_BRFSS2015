@@ -4,6 +4,7 @@ Etapas:
     prepare   valida e divide os dados brutos;
     train     treina o modelo e escolhe o limiar;
     evaluate  avalia no teste e aplica o quality gate (exit code 1 se reprovar);
+    run       executa prepare, train e evaluate em sequência;
     serve     sobe a API de inferência.
 """
 
@@ -29,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     stages.add_parser("prepare", help="valida e divide os dados brutos")
     stages.add_parser("train", help="treina o modelo")
     stages.add_parser("evaluate", help="avalia o modelo e aplica o quality gate")
+    stages.add_parser("run", help="executa prepare, train e evaluate em sequência")
     serve = stages.add_parser("serve", help="sobe a API de inferência")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
@@ -45,20 +47,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     config = load_config(args.config)
 
     # Imports tardios: cada etapa carrega só o que usa (ex.: `serve` não importa o treino).
-    if args.stage == "prepare":
+    if args.stage in ("prepare", "run"):
         from diabetes_risk.pipelines.prepare import run_prepare
 
         run_prepare(config)
-    elif args.stage == "train":
+    if args.stage in ("train", "run"):
         from diabetes_risk.pipelines.train import run_train
 
         run_train(config)
-    elif args.stage == "evaluate":
+    if args.stage in ("evaluate", "run"):
         from diabetes_risk.pipelines.evaluate import run_evaluate
 
         if not run_evaluate(config).gate.passed:
             return EXIT_GATE_FAILED
-    elif args.stage == "serve":
+    if args.stage == "serve":
         import uvicorn
 
         from diabetes_risk.models.bundle import ModelBundle

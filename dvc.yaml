@@ -19,7 +19,7 @@ stages:
       - data/processed/train.parquet
       - src/diabetes_risk/features
       - src/diabetes_risk/models
-      - src/diabetes_risk/evaluation
+      - src/diabetes_risk/evaluation/metrics.py
       - src/diabetes_risk/pipelines/train.py
     params:
       - model
@@ -38,4 +38,12 @@ stages:
       - evaluation
     metrics:
       - reports/metrics.json:
+          cache: false
+    outs:
+      - reports/metrics_report.md:
+          cache: false
+      - reports/feature_importance.csv:
+          cache: false
+    plots:
+      - reports/figures:
           cache: false
