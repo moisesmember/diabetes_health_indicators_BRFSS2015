@@ -62,6 +62,7 @@ class TrainingConfig(_StrictModel):
 
     cv_folds: int = Field(default=5, ge=2)
     threshold_beta: float = Field(default=2.0, gt=0.0)
+    high_risk_precision: float = Field(default=0.5, gt=0.0, lt=1.0)
 
 
 class EvaluationConfig(_StrictModel):

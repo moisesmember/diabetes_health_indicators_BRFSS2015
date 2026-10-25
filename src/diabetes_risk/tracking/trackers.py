@@ -196,10 +196,7 @@ class MlflowTracker:
 
         from diabetes_risk.tracking import mlflow_model
 
-        probability = bundle.predict_proba(input_example)
-        output_example = pd.DataFrame(
-            {"probability": probability, "at_risk": probability >= bundle.threshold}
-        )
+        output_example = bundle.assessment_frame(input_example)
         with tempfile.TemporaryDirectory() as tmp:
             bundle_path = bundle.save(Path(tmp) / "model.joblib")
             model_info = self._mlflow.pyfunc.log_model(

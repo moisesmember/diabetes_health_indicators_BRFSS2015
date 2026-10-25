@@ -15,6 +15,7 @@ from diabetes_risk.models.registry import (
     create_classifier,
     register_model,
 )
+from diabetes_risk.models.risk import RiskBands, RiskLevel
 
 
 class TestRegistry:
@@ -88,6 +89,46 @@ class TestModelBundle:
     def test_rejects_invalid_threshold(self, trained_bundle: ModelBundle, threshold: float) -> None:
         with pytest.raises(ValueError, match="Limiar"):
             ModelBundle(pipeline=trained_bundle.pipeline, threshold=threshold, model_name="x")
+
+    def test_assess_is_consistent_with_threshold(
+        self, trained_bundle: ModelBundle, raw_frame: pd.DataFrame
+    ) -> None:
+        results = trained_bundle.assess(raw_frame)
+
+        expected_at_risk = trained_bundle.predict(raw_frame).astype(bool).tolist()
+        assert [r.at_risk for r in results] == expected_at_risk
+        for result in results:
+            expected = "com diabetes" if result.at_risk else "sem diabetes"
+            assert result.classification == expected
+            assert result.requires_confirmation == result.at_risk
+
+    def test_without_trained_bands_there_is_no_high_level(
+        self, trained_bundle: ModelBundle, raw_frame: pd.DataFrame
+    ) -> None:
+        bundle = ModelBundle(pipeline=trained_bundle.pipeline, threshold=0.0, model_name="x")
+        assert {r.risk_level for r in bundle.assess(raw_frame)} == {RiskLevel.MEDIUM}
+
+    def test_assessment_frame_columns(
+        self, trained_bundle: ModelBundle, raw_frame: pd.DataFrame
+    ) -> None:
+        frame = trained_bundle.assessment_frame(raw_frame.head(3))
+        assert list(frame.columns) == [
+            "probability",
+            "at_risk",
+            "classification",
+            "risk_level",
+            "requires_confirmation",
+        ]
+        assert len(frame) == 3
+
+    def test_rejects_bands_not_aligned_with_threshold(self, trained_bundle: ModelBundle) -> None:
+        with pytest.raises(ValueError, match="faixa média"):
+            ModelBundle(
+                pipeline=trained_bundle.pipeline,
+                threshold=0.4,
+                model_name="x",
+                risk_bands=RiskBands(medium=0.3, high=0.7),
+            )
 
     def test_load_missing_file(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError, match="train"):

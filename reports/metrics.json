@@ -19,5 +19,11 @@
   "missed_cases_per_1000": 25.031016694599828,
   "false_alarms_per_1000": 331.2582983261868,
   "prevalence": 0.17264871688831812,
-  "threshold": 0.39639409246925733
+  "threshold": 0.39639409246925733,
+  "band_share_low": 0.5211240014800949,
+  "band_prevalence_low": 0.04803274580235569,
+  "band_share_medium": 0.34904120323008947,
+  "band_prevalence_medium": 0.23359940134696933,
+  "band_share_high": 0.12983479528981565,
+  "band_prevalence_high": 0.5089689857502095
 }

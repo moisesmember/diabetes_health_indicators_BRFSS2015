@@ -152,8 +152,37 @@ curl -X POST localhost:8000/predict -H "Content-Type: application/json" -d '{
     "HeartDiseaseorAttack":1,"PhysActivity":0,"Fruits":0,"Veggies":1,"HvyAlcoholConsump":0,
     "AnyHealthcare":1,"NoDocbcCost":0,"GenHlth":4,"MentHlth":5,"PhysHlth":10,"DiffWalk":1,
     "Sex":1,"Age":10,"Education":4,"Income":3}]}'
-# {"model":"hist_gradient_boosting","threshold":0.396,"predictions":[{"probability":0.90,"at_risk":true}]}
 ```
+
+Cada predição traz a classificação, a chance e a indicação de confirmação:
+
+```json
+{
+  "probability": 0.90,
+  "at_risk": true,
+  "classification": "com diabetes",
+  "risk_level": "alta",
+  "band_prevalence": 0.50,
+  "recommendation": "Chance alta de diabetes ou pré-diabetes. Procure um médico em breve para confirmar com exames laboratoriais.",
+  "requires_confirmation": true,
+  "confirmatory_tests": ["Glicemia de jejum", "Hemoglobina glicada (HbA1c)", "Teste oral de tolerância à glicose (TOTG), se indicado pelo médico"]
+}
+```
+
+| Chance | Classificação | Score | % das pessoas (teste) | Casos reais na faixa | Indicação |
+|---|---|---|---|---|---|
+| Alta | com diabetes | ≥ 0,747 | 13% | 51 em 100 | exame confirmatório em breve |
+| Média | com diabetes | 0,396 a 0,747 | 35% | 23 em 100 | exame confirmatório |
+| Baixa | sem diabetes | < 0,396 | 52% | 5 em 100 | acompanhamento de rotina |
+
+- **"com diabetes" inclui pré-diabetes** e é um *indicativo de triagem*: toda
+  resposta positiva traz `requires_confirmation: true` e os exames que confirmam.
+- Os cortes são aprendidos no treino (predições *out-of-fold*): "alta" é a faixa
+  em que ao menos 50% das pessoas tinham diabetes/pré-diabetes
+  (`training.high_risk_precision` no `params.yaml`).
+- `band_prevalence` é mais confiável para comunicar risco do que `probability`,
+  que ordena bem mas não é calibrada.
+- A resposta inclui um `disclaimer`: o resultado é triagem, não diagnóstico.
 
 ### Monitorar drift
 

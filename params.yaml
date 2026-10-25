@@ -27,6 +27,11 @@ training:
   # Beta da F-score usada para escolher o limiar de decisão.
   # beta > 1 favorece recall: em triagem, falso negativo custa mais caro.
   threshold_beta: 2.0
+  # Faixas de chance exibidas na predição:
+  #   baixa = score abaixo do limiar de decisão ("sem diabetes");
+  #   alta  = faixa onde ao menos esta fração das pessoas tinha diabetes/pré-diabetes;
+  #   média = entre as duas. Ambas "com diabetes" e com indicação de exame confirmatório.
+  high_risk_precision: 0.5
 
 evaluation:
   # Quality gate: o modelo só é aprovado se todas as métricas atingirem o mínimo.

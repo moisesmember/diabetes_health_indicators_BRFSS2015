@@ -33,6 +33,14 @@ Prevalência no teste: **17.3%** (pré-diabetes + diabetes). Limiar de decisão:
 
 Brier score: **0.180** · Brier skill: **-0.262** (ganho sobre prever sempre a prevalência; 0 = igual, 1 = perfeito).
 
+## Faixas de chance (o que o usuário recebe)
+
+| Chance | Classificação | Score | % das pessoas | Casos reais na faixa | Indicação |
+|---|---|---|---|---|---|
+| Alta | com diabetes | ≥ 0.747 | 13.0% | **51 em 100** | exame confirmatório em breve |
+| Média | com diabetes | 0.396 a 0.747 | 34.9% | **23 em 100** | exame confirmatório |
+| Baixa | sem diabetes | < 0.396 | 52.1% | **5 em 100** | acompanhamento de rotina |
+
 > ⚠️ Brier skill negativo: as probabilidades **não estão calibradas** (efeito esperado de `class_weight=balanced`). Use o score para **ordenar e triar**, não como risco absoluto. Veja `figures/calibration_curve.png`.
 
 ## Gráficos

@@ -2,7 +2,8 @@
 
 Registrar só o estimador sklearn faria ``predict`` usar o limiar padrão de
 0,5, divergindo da API. Este wrapper carrega o :class:`ModelBundle` inteiro e
-devolve probabilidade **e** decisão, então qualquer consumidor do registry
+devolve score, classificação (com/sem diabetes), chance (alta/média/baixa) e a
+necessidade de confirmação, então qualquer consumidor do registry
 (``mlflow.pyfunc.load_model("models:/diabetes-risk@champion")``,
 ``mlflow models serve``, batch no Spark) obtém exatamente o mesmo resultado.
 
@@ -25,7 +26,7 @@ BUNDLE_ARTIFACT_KEY = "bundle"
 
 
 class DiabetesRiskModel(PythonModel):
-    """Wrapper pyfunc: ``predict`` retorna ``probability`` e ``at_risk``."""
+    """Wrapper pyfunc: ``predict`` retorna score, classificação, nível de risco e confirmação."""
 
     def load_context(self, context: Any) -> None:
         """Carrega o bundle a partir dos artefatos do modelo."""
@@ -33,10 +34,7 @@ class DiabetesRiskModel(PythonModel):
 
     def predict(self, context: Any, model_input: pd.DataFrame, params: Any = None) -> pd.DataFrame:
         """Pontua um lote de pacientes (DataFrame no formato do BRFSS)."""
-        probability = self._bundle.predict_proba(model_input)
-        return pd.DataFrame(
-            {"probability": probability, "at_risk": probability >= self._bundle.threshold}
-        )
+        return self._bundle.assessment_frame(model_input)
 
 
 set_model(DiabetesRiskModel())

@@ -16,6 +16,7 @@ from diabetes_risk.domain.protocols import ExperimentTracker
 from diabetes_risk.evaluation.metrics import compute_metrics, find_best_threshold
 from diabetes_risk.models.bundle import ModelBundle
 from diabetes_risk.models.registry import build_pipeline
+from diabetes_risk.models.risk import fit_risk_bands
 from diabetes_risk.tracking.lineage import git_commit
 from diabetes_risk.tracking.trackers import create_tracker
 
@@ -63,6 +64,7 @@ def run_train(config: PipelineConfig, tracker: ExperimentTracker | None = None) 
                 **{f"model.{key}": value for key, value in model_cfg.params.items()},
                 "training.cv_folds": train_cfg.cv_folds,
                 "training.threshold_beta": train_cfg.threshold_beta,
+                "training.high_risk_precision": train_cfg.high_risk_precision,
                 "data.positive_classes": data_cfg.positive_classes,
                 "data.drop_duplicates": data_cfg.drop_duplicates,
                 "data.test_size": data_cfg.test_size,
@@ -90,11 +92,26 @@ def run_train(config: PipelineConfig, tracker: ExperimentTracker | None = None) 
         tracker.log_metrics(cv_metrics, prefix="cv/")
         logger.info("CV (%d folds): %s", train_cfg.cv_folds, _fmt(cv_metrics))
 
+        bands = fit_risk_bands(y, oof_proba, threshold, train_cfg.high_risk_precision)
+        tracker.log_metrics(
+            {
+                "high_risk_threshold": bands.high,
+                **{
+                    f"band_prevalence_{level.name.lower()}": value
+                    for level, value in bands.prevalence.items()
+                    if value is not None
+                },
+            },
+            prefix="cv/",
+        )
+        logger.info("Faixas de risco: média >= %.4f, alta >= %.4f", bands.medium, bands.high)
+
         pipeline = build_pipeline(model_cfg.name, model_cfg.params).fit(X, y)
         bundle = ModelBundle(
             pipeline=pipeline,
             threshold=threshold,
             model_name=model_cfg.name,
+            risk_bands=bands,
             metadata={
                 "params": model_cfg.params,
                 "cv_metrics": cv_metrics,

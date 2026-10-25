@@ -15,7 +15,12 @@ from diabetes_risk.data.preprocessing import split_features_target
 from diabetes_risk.domain.protocols import ExperimentTracker
 from diabetes_risk.evaluation import plots
 from diabetes_risk.evaluation.importance import permutation_feature_importance
-from diabetes_risk.evaluation.metrics import GateResult, check_quality_gate, compute_metrics
+from diabetes_risk.evaluation.metrics import (
+    GateResult,
+    check_quality_gate,
+    compute_metrics,
+    risk_band_metrics,
+)
 from diabetes_risk.evaluation.report import build_report
 from diabetes_risk.models.bundle import ModelBundle
 from diabetes_risk.tracking.lineage import git_commit
@@ -72,9 +77,12 @@ def run_evaluate(
     tracker = tracker or create_tracker(config.tracking, run_id=bundle.run_id)
     try:
         proba = bundle.predict_proba(X)
-        metrics = compute_metrics(y, proba, bundle.threshold, beta=beta)
+        metrics = {
+            **compute_metrics(y, proba, bundle.threshold, beta=beta),
+            **risk_band_metrics(y, proba, bundle.bands),
+        }
         gate = check_quality_gate(metrics, config.evaluation.min_metrics)
-        report = build_report(metrics, gate, beta=beta)
+        report = build_report(metrics, gate, beta=beta, high_risk_threshold=bundle.bands.high)
         importance = permutation_feature_importance(
             bundle.pipeline, X, y, random_state=config.data.random_state
         )

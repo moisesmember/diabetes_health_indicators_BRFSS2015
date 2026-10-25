@@ -104,9 +104,17 @@ class TestMlflowTracker:
 
         model = mlflow.pyfunc.load_model("models:/test-model@champion")
         predictions = model.predict(features.head(5))
-        assert list(predictions.columns) == ["probability", "at_risk"]
+        assert list(predictions.columns) == [
+            "probability",
+            "at_risk",
+            "classification",
+            "risk_level",
+            "requires_confirmation",
+        ]
         expected = trained_bundle.predict(features.head(5)).astype(bool)
         assert predictions["at_risk"].tolist() == expected.tolist()
+        assert set(predictions["classification"]) <= {"com diabetes", "sem diabetes"}
+        assert set(predictions["risk_level"]) <= {"alta", "média", "baixa"}
 
     def test_register_without_model_fails(self, mlflow_config: PipelineConfig) -> None:
         tracker = create_tracker(mlflow_config.tracking)

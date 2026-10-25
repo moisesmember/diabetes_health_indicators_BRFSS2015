@@ -47,8 +47,8 @@ stages:
       size: 1044603
     - path: src/diabetes_risk/evaluation/metrics.py
       hash: md5
-      md5: 7f138cf9458627c44871fb6a44bf2dca
-      size: 6236
+      md5: c5705606c4212e47498fe9ba18425896
+      size: 7245
     - path: src/diabetes_risk/features
       hash: md5
       md5: 124dcc22bd30118568094508d72b6588.dir
@@ -56,13 +56,13 @@ stages:
       nfiles: 4
     - path: src/diabetes_risk/models
       hash: md5
-      md5: 655b81dce8b30f1914449c9a066a6b63.dir
-      size: 15715
-      nfiles: 6
+      md5: b753a95d8e70ca417261f67a7da2692d.dir
+      size: 36021
+      nfiles: 8
     - path: src/diabetes_risk/pipelines/train.py
       hash: md5
-      md5: 8b04f4556776d623550441cc258a9a33
-      size: 5255
+      md5: 12d76c6822dc48e49a361352931b8e74
+      size: 6101
     params:
       params.yaml:
         model:
@@ -76,11 +76,12 @@ stages:
         training:
           cv_folds: 5
           threshold_beta: 2.0
+          high_risk_precision: 0.5
     outs:
     - path: models/model.joblib
       hash: md5
-      md5: 44814e8a4f3035ee6fae5dc5741eac63
-      size: 323937
+      md5: f0109f161f88160b4d61666947535580
+      size: 324133
   evaluate:
     cmd: diabetes-risk evaluate
     deps:
@@ -90,17 +91,17 @@ stages:
       size: 270604
     - path: models/model.joblib
       hash: md5
-      md5: 44814e8a4f3035ee6fae5dc5741eac63
-      size: 323937
+      md5: f0109f161f88160b4d61666947535580
+      size: 324133
     - path: src/diabetes_risk/evaluation
       hash: md5
-      md5: 337372cc5b46831c38d504f15c129dca.dir
-      size: 43961
+      md5: d935a750caef0a0a21c56faa31fc7ece.dir
+      size: 49571
       nfiles: 10
     - path: src/diabetes_risk/pipelines/evaluate.py
       hash: md5
-      md5: 642940378bd1e17b85b10fd64e7381c1
-      size: 6672
+      md5: eaaa1600164c9c1e7dfa017ec0338c77
+      size: 7012
     params:
       params.yaml:
         evaluation:
@@ -120,9 +121,9 @@ stages:
       nfiles: 6
     - path: reports/metrics.json
       hash: md5
-      md5: f4f4a340fb020a4ac42df0dbb2cde8ff
-      size: 681
+      md5: ed5a1bf4ba1db1f6aef3d2b009596023
+      size: 954
     - path: reports/metrics_report.md
       hash: md5
-      md5: 9e72785bbfa158ff951eb3e1b2f1af1a
-      size: 1899
+      md5: aca9abf1de854c08240281da0a5c4477
+      size: 2337

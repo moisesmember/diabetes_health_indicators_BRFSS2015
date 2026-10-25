@@ -52,3 +52,12 @@ def test_optional_sections_have_defaults(config_dict: dict[str, object], tmp_pat
     assert config.training.cv_folds == 5
     assert config.tracking.backend == "local"
     assert config.evaluation.min_metrics == {}
+
+
+@pytest.mark.parametrize("precision", [0.0, 1.0])
+def test_rejects_invalid_high_risk_precision(
+    config_dict: dict[str, dict[str, object]], precision: float
+) -> None:
+    config_dict["training"]["high_risk_precision"] = precision
+    with pytest.raises(ValidationError, match="high_risk_precision"):
+        PipelineConfig.model_validate(config_dict)

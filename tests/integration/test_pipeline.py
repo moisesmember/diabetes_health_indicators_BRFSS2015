@@ -57,8 +57,14 @@ def test_full_pipeline(config: PipelineConfig, raw_csv: Path) -> None:
     assert saved["gate_passed"] is True
     assert saved["roc_auc"] == pytest.approx(report.metrics["roc_auc"])
 
+    assert bundle.risk_bands is not None
+    assert bundle.risk_bands.medium == bundle.threshold <= bundle.risk_bands.high
+    assert {"band_share_low", "band_share_medium", "band_share_high"} <= set(saved)
+
     report_dir = config.artifacts.report_dir
-    assert "Quality gate" in (report_dir / "metrics_report.md").read_text(encoding="utf-8")
+    report_text = (report_dir / "metrics_report.md").read_text(encoding="utf-8")
+    assert "Quality gate" in report_text
+    assert "Faixas de chance" in report_text
     assert (report_dir / "feature_importance.csv").exists()
     assert len(list(config.artifacts.figures_dir.glob("*.png"))) == 6
 

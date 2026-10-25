@@ -7,7 +7,9 @@ from diabetes_risk.evaluation.metrics import (
     confusion_metrics,
     fbeta_curve,
     find_best_threshold,
+    risk_band_metrics,
 )
+from diabetes_risk.models.risk import RiskBands
 
 
 class TestComputeMetrics:
@@ -101,3 +103,24 @@ class TestInterpretableMetrics:
         curve = fbeta_curve([0, 1, 0, 1], [0.2, 0.8, 0.4, 0.6])
         lengths = {len(curve.thresholds), len(curve.precision), len(curve.recall), len(curve.fbeta)}
         assert len(lengths) == 1
+
+
+def test_risk_band_metrics_share_and_prevalence() -> None:
+    bands = RiskBands(medium=0.4, high=0.7)
+    y = [0, 0, 1, 0, 1, 1]
+    proba = [0.1, 0.2, 0.3, 0.5, 0.6, 0.9]  # baixa: 3, média: 2, alta: 1
+
+    metrics = risk_band_metrics(y, proba, bands)
+
+    assert metrics["band_share_low"] == pytest.approx(3 / 6)
+    assert metrics["band_share_medium"] == pytest.approx(2 / 6)
+    assert metrics["band_share_high"] == pytest.approx(1 / 6)
+    assert metrics["band_prevalence_low"] == pytest.approx(1 / 3)
+    assert metrics["band_prevalence_medium"] == pytest.approx(1 / 2)
+    assert metrics["band_prevalence_high"] == 1.0
+
+
+def test_risk_band_metrics_skips_prevalence_of_empty_band() -> None:
+    metrics = risk_band_metrics([0, 1], [0.1, 0.2], RiskBands(medium=0.4, high=0.7))
+    assert metrics["band_share_high"] == 0.0
+    assert "band_prevalence_high" not in metrics

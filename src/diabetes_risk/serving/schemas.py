@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from diabetes_risk.models.risk import Classification, RiskLevel
+
 
 class PatientFeatures(BaseModel):
     """Indicadores de saúde de um paciente, no formato do BRFSS 2015."""
@@ -44,10 +46,28 @@ class PredictionRequest(BaseModel):
 
 
 class Prediction(BaseModel):
-    """Resultado para um paciente."""
+    """Resultado da triagem de um paciente."""
 
-    probability: float = Field(description="Probabilidade estimada de pré-diabetes/diabetes")
-    at_risk: bool = Field(description="True se a probabilidade atinge o limiar do modelo")
+    probability: float = Field(
+        description="Score do modelo (0 a 1). Ordena o risco, mas não é uma probabilidade "
+        "calibrada; para interpretar, use risk_level e band_prevalence."
+    )
+    at_risk: bool = Field(description="True se o score atinge o limiar de decisão do modelo")
+    classification: Classification = Field(
+        description="Indicativo de triagem: 'com diabetes' (inclui pré-diabetes) ou 'sem diabetes'"
+    )
+    risk_level: RiskLevel = Field(
+        description="Chance de diabetes ou pré-diabetes: alta, média ou baixa"
+    )
+    band_prevalence: float | None = Field(
+        description="Nos dados de treino, fração de pessoas desta mesma faixa que tinham "
+        "diabetes ou pré-diabetes (ex.: 0.5 = 50 em cada 100)"
+    )
+    recommendation: str = Field(description="Indicação do que fazer a seguir")
+    requires_confirmation: bool = Field(
+        description="True quando o resultado precisa ser confirmado por exame laboratorial"
+    )
+    confirmatory_tests: list[str] = Field(description="Exames indicados para a confirmação")
 
 
 class PredictionResponse(BaseModel):
@@ -55,7 +75,18 @@ class PredictionResponse(BaseModel):
 
     model: str
     threshold: float
+    disclaimer: str = Field(description="Aviso: triagem estatística, não diagnóstico")
     predictions: list[Prediction]
+
+
+class RiskBandsInfo(BaseModel):
+    """Cortes de score que definem cada faixa de chance."""
+
+    medium_from: float = Field(description="Score a partir do qual a chance é média")
+    high_from: float = Field(description="Score a partir do qual a chance é alta")
+    prevalence: dict[RiskLevel, float | None] = Field(
+        description="Fração com diabetes/pré-diabetes em cada faixa (dados de treino)"
+    )
 
 
 class ModelInfo(BaseModel):
@@ -64,3 +95,4 @@ class ModelInfo(BaseModel):
     model: str
     threshold: float
     trained_at: str
+    risk_bands: RiskBandsInfo

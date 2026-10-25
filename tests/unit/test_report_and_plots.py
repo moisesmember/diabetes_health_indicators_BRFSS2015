@@ -6,9 +6,10 @@ from matplotlib.figure import Figure
 from diabetes_risk.domain.schemas import TARGET_COLUMN
 from diabetes_risk.evaluation import plots
 from diabetes_risk.evaluation.importance import permutation_feature_importance
-from diabetes_risk.evaluation.metrics import GateResult, compute_metrics
+from diabetes_risk.evaluation.metrics import GateResult, compute_metrics, risk_band_metrics
 from diabetes_risk.evaluation.report import build_report
 from diabetes_risk.models.bundle import ModelBundle
+from diabetes_risk.models.risk import RiskBands
 
 
 @pytest.fixture
@@ -41,6 +42,25 @@ class TestReport:
 
         assert "❌ REPROVADO" in report
         assert "- roc_auc: 0.5 < mínimo 0.8" in report
+
+    def test_includes_risk_band_section_when_available(
+        self, predictions: tuple[np.ndarray, np.ndarray]
+    ) -> None:
+        y, proba = predictions
+        bands = RiskBands(medium=0.5, high=0.8)
+        metrics = {**compute_metrics(y, proba, 0.5), **risk_band_metrics(y, proba, bands)}
+
+        report = build_report(metrics, GateResult(passed=True), high_risk_threshold=0.8)
+
+        assert "## Faixas de chance" in report
+        assert "| Alta | com diabetes | ≥ 0.800 |" in report
+        assert "| Baixa | sem diabetes | < 0.500 |" in report
+
+    def test_omits_risk_band_section_without_band_metrics(
+        self, predictions: tuple[np.ndarray, np.ndarray]
+    ) -> None:
+        report = build_report(compute_metrics(*predictions), GateResult(passed=True))
+        assert "Faixas de chance" not in report
 
     def test_warns_when_probabilities_are_uncalibrated(self) -> None:
         y = np.array([0] * 90 + [1] * 10)

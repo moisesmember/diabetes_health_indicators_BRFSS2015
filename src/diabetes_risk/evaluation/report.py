@@ -21,13 +21,49 @@ def _per_100(value: float) -> str:
     return f"{round(100 * value)}"
 
 
-def build_report(metrics: Mapping[str, float], gate: GateResult, beta: float = 2.0) -> str:
+def _risk_band_section(m: Mapping[str, float], high_risk_threshold: float | None) -> list[str]:
+    """Tabela das faixas exibidas ao usuário, com o que de fato acontece em cada uma."""
+    high_value = f"{high_risk_threshold:.3f}" if high_risk_threshold is not None else "corte alto"
+    bands = [
+        ("Alta", "com diabetes", f"≥ {high_value}", "high", "exame confirmatório em breve"),
+        (
+            "Média",
+            "com diabetes",
+            f"{m['threshold']:.3f} a {high_value}",
+            "medium",
+            "exame confirmatório",
+        ),
+        ("Baixa", "sem diabetes", f"< {m['threshold']:.3f}", "low", "acompanhamento de rotina"),
+    ]
+    lines = [
+        "## Faixas de chance (o que o usuário recebe)",
+        "",
+        "| Chance | Classificação | Score | % das pessoas | Casos reais na faixa | Indicação |",
+        "|---|---|---|---|---|---|",
+    ]
+    for label, classification, score, key, indication in bands:
+        prevalence = m.get(f"band_prevalence_{key}")
+        observed = f"**{_per_100(prevalence)} em 100**" if prevalence is not None else "—"
+        lines.append(
+            f"| {label} | {classification} | {score} | {_pct(m[f'band_share_{key}'])} "
+            f"| {observed} | {indication} |"
+        )
+    return [*lines, ""]
+
+
+def build_report(
+    metrics: Mapping[str, float],
+    gate: GateResult,
+    beta: float = 2.0,
+    high_risk_threshold: float | None = None,
+) -> str:
     """Gera o relatório Markdown a partir das métricas de :func:`compute_metrics`.
 
     Args:
         metrics: Métricas calculadas no conjunto de teste.
         gate: Resultado do quality gate.
         beta: Beta usado na F-score (para localizar a métrica ``f{beta}``).
+        high_risk_threshold: Início da faixa alta (exibido na seção de faixas).
 
     Returns:
         Texto Markdown com veredito, tabelas interpretadas e alertas.
@@ -84,6 +120,8 @@ def build_report(metrics: Mapping[str, float], gate: GateResult, beta: float = 2
         "(ganho sobre prever sempre a prevalência; 0 = igual, 1 = perfeito).",
         "",
     ]
+    if "band_share_low" in m:
+        lines += _risk_band_section(m, high_risk_threshold)
     if m["brier_skill"] < 0:
         lines += [
             "> ⚠️ Brier skill negativo: as probabilidades **não estão calibradas** "

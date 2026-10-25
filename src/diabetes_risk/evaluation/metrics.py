@@ -23,6 +23,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+from diabetes_risk.models.risk import RiskBands, RiskLevel
+
 
 def compute_metrics(
     y_true: ArrayLike, y_proba: ArrayLike, threshold: float = 0.5, beta: float = 2.0
@@ -135,6 +137,29 @@ def fbeta_curve(y_true: ArrayLike, y_proba: ArrayLike, beta: float = 2.0) -> FBe
         where=denominator > 0,
     )
     return FBetaCurve(thresholds, precision, recall, fbeta)
+
+
+def risk_band_metrics(y_true: ArrayLike, y_proba: ArrayLike, bands: RiskBands) -> dict[str, float]:
+    """Tamanho e prevalência real de cada faixa de risco (baixa/média/alta).
+
+    Mostra se as faixas exibidas ao usuário se sustentam em dados novos: por
+    exemplo, se a faixa "alta" continua tendo ~50% de casos no teste.
+
+    Returns:
+        ``band_share_<faixa>`` (fração das pessoas na faixa) e
+        ``band_prevalence_<faixa>`` (fração com diabetes/pré-diabetes na faixa),
+        com ``<faixa>`` em ``low``, ``medium`` e ``high``.
+    """
+    y = np.asarray(y_true)
+    levels = bands.levels(y_proba)
+    result: dict[str, float] = {}
+    for level in RiskLevel:
+        mask = levels == level.value
+        name = level.name.lower()
+        result[f"band_share_{name}"] = float(mask.mean())
+        if mask.any():
+            result[f"band_prevalence_{name}"] = float(y[mask].mean())
+    return result
 
 
 @dataclass(frozen=True)

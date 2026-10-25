@@ -18,6 +18,7 @@ from diabetes_risk.config import PipelineConfig, load_config
 from diabetes_risk.domain.schemas import FEATURE_RANGES, TARGET_COLUMN
 from diabetes_risk.models.bundle import ModelBundle
 from diabetes_risk.models.registry import build_pipeline
+from diabetes_risk.models.risk import fit_risk_bands
 
 
 def make_raw_frame(n_rows: int = 600, seed: int = 0) -> pd.DataFrame:
@@ -107,4 +108,7 @@ def trained_bundle() -> ModelBundle:
     X = frame.drop(columns=TARGET_COLUMN)
     y = (frame[TARGET_COLUMN] > 0).astype(int)
     pipeline = build_pipeline("logistic_regression").fit(X, y)
-    return ModelBundle(pipeline=pipeline, threshold=0.4, model_name="logistic_regression")
+    bands = fit_risk_bands(y, pipeline.predict_proba(X)[:, 1], threshold=0.4)
+    return ModelBundle(
+        pipeline=pipeline, threshold=0.4, model_name="logistic_regression", risk_bands=bands
+    )

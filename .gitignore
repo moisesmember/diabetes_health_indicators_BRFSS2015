@@ -14,12 +14,14 @@ dist/
 coverage.xml
 htmlcov/
 
-# Dados e artefatos (gerados pelo pipeline / versionados pelo DVC)
-data/
-models/
-reports/runs/
-mlruns/
-mlflow.db
+# Dados e artefatos (gerados pelo pipeline / versionados pelo DVC).
+# A "/" inicial ancora na raiz: sem ela, "data/" e "models/" ignorariam também
+# os pacotes src/diabetes_risk/data/ e src/diabetes_risk/models/.
+/data/
+/models/
+/reports/runs/
+/mlruns/
+/mlflow.db
 
 # IDE / SO
 .vscode/

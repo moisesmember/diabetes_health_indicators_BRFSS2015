@@ -28,6 +28,9 @@ def test_model_info(client: TestClient, trained_bundle: ModelBundle) -> None:
     body = client.get("/model").json()
     assert body["model"] == "logistic_regression"
     assert body["threshold"] == trained_bundle.threshold
+    assert body["risk_bands"]["medium_from"] == trained_bundle.threshold
+    assert body["risk_bands"]["high_from"] >= trained_bundle.threshold
+    assert set(body["risk_bands"]["prevalence"]) == {"baixa", "média", "alta"}
 
 
 def test_predict_returns_one_result_per_patient_in_order(client: TestClient) -> None:
@@ -37,6 +40,25 @@ def test_predict_returns_one_result_per_patient_in_order(client: TestClient) -> 
     low, high = response.json()["predictions"]
     assert 0.0 <= low["probability"] < high["probability"] <= 1.0
     assert high["at_risk"] is True
+
+
+def test_predict_returns_classification_level_and_confirmation(client: TestClient) -> None:
+    body = client.post("/predict", json={"patients": [LOW_RISK, HIGH_RISK]}).json()
+    low, high = body["predictions"]
+
+    assert "não é diagnóstico" in body["disclaimer"].lower()
+
+    assert low["classification"] == "sem diabetes"
+    assert low["risk_level"] == "baixa"
+    assert low["requires_confirmation"] is False
+    assert low["confirmatory_tests"] == []
+
+    assert high["classification"] == "com diabetes"
+    assert high["risk_level"] in {"média", "alta"}
+    assert high["requires_confirmation"] is True
+    assert "Hemoglobina glicada (HbA1c)" in high["confirmatory_tests"]
+    assert high["recommendation"]
+    assert 0.0 <= high["band_prevalence"] <= 1.0
 
 
 @pytest.mark.parametrize(
